@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fdfbf7"/>
+      <stop offset="100%" stop-color="#f0e6d6"/>
+    </linearGradient>
+    <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f5c767"/>
+      <stop offset="50%" stop-color="#d49a37"/>
+      <stop offset="100%" stop-color="#a3701b"/>
+    </linearGradient>
+    <linearGradient id="emeraldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#2ecc71"/>
+      <stop offset="100%" stop-color="#1b5e3b"/>
+    </linearGradient>
+    <filter id="shadow" x="-10%" y="-10%" width="120%" height="120%">
+      <feDropShadow dx="0" dy="12" stdDeviation="16" flood-color="#3d2b1f" flood-opacity="0.18"/>
+    </filter>
+  </defs>
+
+  <!-- Background Rounded Shield -->
+  <rect width="512" height="512" rx="128" fill="url(#bgGrad)"/>
+  <rect x="16" y="16" width="480" height="480" rx="112" fill="none" stroke="#e0d0b8" stroke-width="4"/>
+
+  <!-- Outer Wax Seal Rim -->
+  <circle cx="256" cy="256" r="180" fill="url(#goldGrad)" filter="url(#shadow)"/>
+  <circle cx="256" cy="256" r="162" fill="#2b231b"/>
+  <circle cx="256" cy="256" r="148" fill="url(#bgGrad)"/>
+
+  <!-- Emerald Jewel Center -->
+  <polygon points="256,150 330,224 256,362 182,224" fill="url(#emeraldGrad)"/>
+  <polygon points="256,150 256,362 330,224" fill="#1b5e3b" opacity="0.4"/>
+  <polygon points="256,150 182,224 256,362" fill="#2ecc71" opacity="0.3"/>
+
+  <!-- Gold Coin Accent -->
+  <circle cx="340" cy="340" r="44" fill="url(#goldGrad)" filter="url(#shadow)"/>
+  <circle cx="340" cy="340" r="36" fill="none" stroke="#ffffff" stroke-width="3" opacity="0.6"/>
+  <text x="340" y="352" font-family="sans-serif" font-size="32" font-weight="900" fill="#ffffff" text-anchor="middle">M</text>
+</svg>

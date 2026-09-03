@@ -1,0 +1,12 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Memony Financial Documents Collection
+    match /transactions/{document=**} {
+      allow read, write: if true; // Mode fleksibel / atau bisa dibatasi dengan auth
+    }
+    match /budgets/{document=**} {
+      allow read, write: if true;
+    }
+  }
+}

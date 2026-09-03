@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Memony — AI Tactile Expense & Receipt Memory Ledger</title>
+  
+  <!-- Favicon & PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#c99738" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+  <meta name="apple-mobile-web-app-title" content="Memony" />
+  
+  <!-- Typography (Nunito) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+
+  <!-- Stylesheet -->
+  <link rel="stylesheet" href="styles.css" />
+
+  <!-- External Libraries (Firebase & Anime.js) -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/animejs/3.2.2/anime.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    
+    <!-- ====================================================================
+         APP HEADER
+         ==================================================================== -->
+    <header class="app-header">
+      <div class="brand-section">
+        <div class="brand-icon-box">🪙</div>
+        <div>
+          <h1 class="brand-title">
+            Memony
+            <span class="brand-badge">Gemini 2.0 AI</span>
+          </h1>
+          <p class="brand-subtitle">Memory & Money Ledger • The Royal Postal Vault</p>
+        </div>
+      </div>
+      <div class="header-actions">
+        <button id="btn-toggle-mute" class="btn-tactile btn-icon-only" title="Toggle Suara Taktil">🔔</button>
+        <button id="btn-open-settings" class="btn-tactile btn-icon-only" title="Pengaturan & Cadangan">⚙️</button>
+      </div>
+    </header>
+
+    <!-- ====================================================================
+         HERO QUICK-ACTION HUBS (Scanner, Voice, Manual)
+         ==================================================================== -->
+    <section class="hero-action-grid">
+      
+      <!-- AI Dropzone Scanner -->
+      <div id="scanner-dropzone" class="scanner-card">
+        <div id="scan-laser-beam" class="scan-laser-beam"></div>
+        <div class="scan-icon-pulse">📸</div>
+        <h2 class="scan-title">Pindai Struk Belanjaan Otomatis</h2>
+        <p class="scan-desc">Tarik & lepas foto struk ke sini, atau jepret langsung lewat kamera HP/Laptop. AI Gemini akan membedah item & total seketika.</p>
+        
+        <div class="scan-actions">
+          <label for="receipt-camera-input" class="btn-tactile btn-primary">
+            📷 Jepret Kamera
+          </label>
+          <label for="receipt-file-input" class="btn-tactile btn-gold">
+            📂 Pilih Foto Struk
+          </label>
+          <input type="file" id="receipt-camera-input" accept="image/*" capture="environment" style="display: none;" />
+          <input type="file" id="receipt-file-input" accept="image/*" style="display: none;" />
+        </div>
+      </div>
+
+      <!-- Side Quick Hubs -->
+      <div class="side-quick-hubs">
+        <div id="hub-voice-btn" class="quick-hub-card">
+          <div class="hub-info">
+            <div class="hub-icon voice">🎙️</div>
+            <div>
+              <div class="hub-title">Curhat Pengeluaran</div>
+              <div class="hub-desc">Rekam suara jajanan santai</div>
+            </div>
+          </div>
+          <span style="font-size: 18px; color: var(--text-muted);">➔</span>
+        </div>
+
+        <div id="hub-manual-btn" class="quick-hub-card">
+          <div class="hub-info">
+            <div class="hub-icon manual">✏️</div>
+            <div>
+              <div class="hub-title">Catat Manual Kilat</div>
+              <div class="hub-desc">Input cepat tanpa struk</div>
+            </div>
+          </div>
+          <span style="font-size: 18px; color: var(--text-muted);">➔</span>
+        </div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         BENTO STATS & CHARTS GRID
+         ==================================================================== -->
+    <section class="bento-stats-grid">
+      
+      <!-- Budget Progress Card -->
+      <div class="bento-card">
+        <div class="card-header-flex">
+          <span class="card-title">💰 Anggaran Bulan Ini</span>
+          <span id="stat-budget-percent" class="card-tag">0%</span>
+        </div>
+        <div id="stat-total-spent" class="stat-big-number">Rp 0</div>
+        <div id="stat-budget-remaining" class="stat-subtext">Sisa: Rp 0</div>
+        <div class="progress-bar-track">
+          <div id="budget-bar-fill" class="progress-bar-fill"></div>
+        </div>
+        <div class="progress-labels">
+          <span>0%</span>
+          <span>Batas Anggaran</span>
+          <span>100%</span>
+        </div>
+      </div>
+
+      <!-- Wallet Overview -->
+      <div class="bento-card">
+        <div class="card-header-flex">
+          <span class="card-title">📊 Ringkasan Aktivitas</span>
+          <span id="stat-tx-count" class="card-tag">0 Transaksi</span>
+        </div>
+        <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 12px;">
+          Setiap pengeluaran tercatat sebagai kenangan berharga dan terlindungi di Cloud Firestore.
+        </p>
+        <div style="margin-top: auto; display: flex; gap: 8px;">
+          <button id="btn-export-csv" class="btn-tactile" style="font-size: 12px; padding: 6px 10px; flex: 1;">
+            📥 Unduh CSV
+          </button>
+          <button id="btn-export-json" class="btn-tactile" style="font-size: 12px; padding: 6px 10px; flex: 1;">
+            🗄️ Cadangan JSON
+          </button>
+        </div>
+      </div>
+
+      <!-- Interactive Category Donut Chart -->
+      <div class="bento-card">
+        <div class="card-header-flex">
+          <span class="card-title">🏷️ Proporsi Kategori</span>
+          <span class="card-tag">Bulan Ini</span>
+        </div>
+        <div id="category-chart-container" style="min-height: 160px;"></div>
+      </div>
+
+    </section>
+
+    <!-- ====================================================================
+         THE ROYAL LEDGER (Transactions History)
+         ==================================================================== -->
+    <section class="ledger-section">
+      <div class="ledger-header">
+        <div class="ledger-filters">
+          <button class="filter-pill active" data-filter="semua">Semua</button>
+          <button class="filter-pill" data-filter="hari-ini">Hari Ini</button>
+          <button class="filter-pill" data-filter="minggu-ini">Minggu Ini</button>
+          <button class="filter-pill" data-filter="bulan-ini">Bulan Ini</button>
+        </div>
+        <div class="ledger-search-box">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="ledger-search-input" class="ledger-search-input" placeholder="Cari toko, barang, catatan..." />
+        </div>
+      </div>
+
+      <!-- Transaction List Container -->
+      <div id="tx-list-container" class="tx-list"></div>
+    </section>
+
+  </div>
+
+  <!-- ====================================================================
+       MODAL: VERIFIKASI HASIL SCAN AI
+       ==================================================================== -->
+  <div id="modal-verify-scan" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">🔍 Verifikasi Struk Belanjaan</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Nama Toko / Merchant</label>
+          <input type="text" id="verify-store" class="form-input" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Tanggal Transaksi</label>
+          <input type="date" id="verify-date" class="form-input" />
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Kategori</label>
+          <select id="verify-category" class="form-select">
+            <option value="Makanan & Minuman">🍔 Makanan & Minuman</option>
+            <option value="Belanja & Kebutuhan">🛍️ Belanja & Kebutuhan</option>
+            <option value="Transportasi">🛵 Transportasi</option>
+            <option value="Pendidikan & RPL">💻 Pendidikan & RPL</option>
+            <option value="Hiburan & Hobi">🎮 Hiburan & Hobi</option>
+            <option value="Lainnya">🪙 Lainnya</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Total Pengeluaran (Rp)</label>
+          <input type="number" id="verify-total" class="form-input" style="font-weight: 800; color: var(--accent-ruby);" />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Rincian Barang yang Terdeteksi</label>
+        <div style="max-height: 140px; overflow-y: auto; border: 1px solid var(--border-warm); border-radius: var(--radius-sm);">
+          <table class="receipt-items-table">
+            <thead>
+              <tr>
+                <th>Nama Barang</th>
+                <th style="width: 50px;">Qty</th>
+                <th style="width: 80px;">Harga</th>
+              </tr>
+            </thead>
+            <tbody id="verify-items-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">Metode Pembayaran</label>
+          <input type="text" id="verify-payment" class="form-input" placeholder="Tunai / QRIS / Debit" />
+        </div>
+        <div class="form-group">
+          <label class="form-label">Catatan Tambahan</label>
+          <input type="text" id="verify-notes" class="form-input" placeholder="Opsional (misal: sarapan bareng teman)" />
+        </div>
+      </div>
+
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button id="btn-save-verified-tx" class="btn-tactile btn-primary" style="flex: 1; justify-content: center; font-size: 15px; padding: 12px;">
+          🌸 Cap & Simpan ke Buku Kas
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: REKAM SUARA PENGELUARAN
+       ==================================================================== -->
+  <div id="modal-voice-record" class="modal-overlay">
+    <div class="modal-box" style="text-align: center;">
+      <div class="modal-header">
+        <h3 class="modal-title">🎙️ Rekam Suara Pengeluaran</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 20px;">
+        Contoh: <em>"Beli nasi goreng 15 ribu sama es teh 4 ribu di warung Pak Joko"</em>
+      </p>
+      
+      <div class="voice-wave-box">
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+        <div class="wave-bar"></div>
+      </div>
+      <p id="voice-status-text" style="font-size: 14px; font-weight: 700; color: var(--accent-ruby); margin-bottom: 24px;">
+        🎙️ Sedang merekam...
+      </p>
+
+      <button id="btn-stop-voice" class="btn-tactile btn-gold" style="width: 100%; justify-content: center; padding: 12px;">
+        ⏹️ Selesai & Kirim ke AI Gemini
+      </button>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: CATAT MANUAL KILAT
+       ==================================================================== -->
+  <div id="modal-manual-add" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">✏️ Tambah Transaksi Manual</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+      
+      <form id="form-manual-add">
+        <div class="form-group">
+          <label class="form-label">Nama Pengeluaran / Toko</label>
+          <input type="text" id="manual-store" class="form-input" placeholder="Contoh: Es Kelapa Muda / Parkir" required />
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Nominal (Rp)</label>
+            <input type="number" id="manual-amount" class="form-input" placeholder="10000" required />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kategori</label>
+            <select id="manual-category" class="form-select">
+              <option value="Makanan & Minuman">🍔 Makanan & Minuman</option>
+              <option value="Belanja & Kebutuhan">🛍️ Belanja & Kebutuhan</option>
+              <option value="Transportasi">🛵 Transportasi</option>
+              <option value="Pendidikan & RPL">💻 Pendidikan & RPL</option>
+              <option value="Hiburan & Hobi">🎮 Hiburan & Hobi</option>
+              <option value="Lainnya">🪙 Lainnya</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Tanggal</label>
+            <input type="date" id="manual-date" class="form-input" />
+          </div>
+          <div class="form-group">
+            <label class="form-label">Catatan</label>
+            <input type="text" id="manual-notes" class="form-input" placeholder="Opsional" />
+          </div>
+        </div>
+        <button type="submit" class="btn-tactile btn-primary" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;">
+          Simpan Transaksi
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- ====================================================================
+       MODAL: PENGATURAN & API KEY
+       ==================================================================== -->
+  <div id="modal-settings" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">⚙️ Pengaturan & Kredensial</h3>
+        <button class="modal-close-btn">&times;</button>
+      </div>
+
+      <form id="form-settings">
+        <div class="form-group">
+          <label class="form-label">Batas Anggaran Bulanan (Rp)</label>
+          <input type="number" id="setting-budget" class="form-input" required />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Google Gemini API Key</label>
+          <input type="password" id="setting-api-key" class="form-input" placeholder="AQ.Ab8..." />
+          <p style="font-size: 11px; color: var(--text-muted); margin-top: 4px;">
+            Tersimpan aman di LocalStorage browser pribadi dan tidak akan pernah terkirim ke server publik.
+          </p>
+        </div>
+
+        <button type="submit" class="btn-tactile btn-gold" style="width: 100%; justify-content: center; padding: 12px; margin-top: 14px;">
+          Simpan Pengaturan
+        </button>
+      </form>
+    </div>
+  </div>
+
+  <!-- Toast Notification Area -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Application Logic Scripts (Loaded in dependency order) -->
+  <script src="config.local.js" onerror="this.onerror=null;this.src='config.example.js';"></script>
+  <script src="audio-service.js"></script>
+  <script src="storage-service.js"></script>
+  <script src="chart-service.js"></script>
+  <script src="firebase-service.js"></script>
+  <script src="gemini-service.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

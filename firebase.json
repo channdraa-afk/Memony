@@ -1,0 +1,30 @@
+{
+  "hosting": {
+    "public": "src",
+    "ignore": [
+      "firebase.json",
+      "**/.*",
+      "**/node_modules/**"
+    ],
+    "rewrites": [
+      {
+        "source": "**",
+        "destination": "/index.html"
+      }
+    ],
+    "headers": [
+      {
+        "source": "**/*.@(js|css|png|jpg|jpeg|gif|svg|webp|ico|woff2)",
+        "headers": [
+          {
+            "key": "Cache-Control",
+            "value": "max-age=86400"
+          }
+        ]
+      }
+    ]
+  },
+  "firestore": {
+    "rules": "firestore.rules"
+  }
+}

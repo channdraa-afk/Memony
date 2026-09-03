@@ -1,0 +1,22 @@
+{
+  "name": "memony",
+  "version": "1.0.0",
+  "description": "AI Tactile Expense & Receipt Memory Ledger bertenaga Google Gemini & Firebase",
+  "main": "src/index.html",
+  "scripts": {
+    "start": "npx serve src -p 3000",
+    "deploy": "firebase deploy --only hosting",
+    "deploy:rules": "firebase deploy --only firestore:rules"
+  },
+  "keywords": [
+    "finance",
+    "ai",
+    "gemini",
+    "receipt-scanner",
+    "pwa",
+    "tactile",
+    "violet-evergarden"
+  ],
+  "author": "Chandra (@channdraa-afk)",
+  "license": "MIT"
+}

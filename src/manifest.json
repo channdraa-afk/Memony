@@ -1,0 +1,18 @@
+{
+  "name": "Memony — Memory & Money Ledger",
+  "short_name": "Memony",
+  "description": "AI Tactile Expense & Receipt Memory Ledger bertenaga Google Gemini & Firebase",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#fbf8f2",
+  "theme_color": "#c99738",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
