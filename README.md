@@ -36,7 +36,7 @@ Seringkali kita malas mencatat keuangan karena aplikasi kas yang ada terasa memb
 
 ---
 
-## 🏛️ 3. Fitur-Fitur Mahakarya
+## 🏛️ 3. Fitur-Fitur
 
 ### 📸 1. The Vision Receipt Scanner (Jepret Struk Otomatis)
 - Didukung oleh model **Google Gemini 2.0 Flash**.
