@@ -6,21 +6,21 @@
  */
 
 window.MEMONY_CONFIG = {
-  // Google Gemini API Key (dari Google AI Studio)
-  GEMINI_API_KEY: "YOUR_GEMINI_API_KEY_HERE",
+  // Google Gemini API Key (Bisa diisi langsung lewat menu Pengaturan di aplikasi)
+  GEMINI_API_KEY: "",
 
   // Model Gemini yang digunakan untuk OCR Struk & Audio
-  GEMINI_MODEL: "gemini-2.0-flash",
+  GEMINI_MODEL: "gemini-flash-lite-latest",
 
-  // Konfigurasi Firebase Web SDK (dari Firebase Console)
+  // Konfigurasi Firebase Web SDK (Opsional - jika kosong, otomatis berjalan 100% Offline LocalStorage)
   FIREBASE_CONFIG: {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID",
-    measurementId: "YOUR_MEASUREMENT_ID"
+    apiKey: "",
+    authDomain: "",
+    projectId: "",
+    storageBucket: "",
+    messagingSenderId: "",
+    appId: "",
+    measurementId: ""
   },
 
   // Pengaturan Standar Aplikasi

@@ -163,7 +163,7 @@ class AudioService {
     }
   }
 
-  // 5. Click Taktil (Tombol 3D)
+  // 5. Click Taktil (Tombol 3D Renyah Khas Duolingo)
   playClickSound() {
     if (this.isMuted) return;
     try {
@@ -174,17 +174,18 @@ class AudioService {
       const osc = this.audioCtx.createOscillator();
       const gain = this.audioCtx.createGain();
 
-      osc.type = "sine";
-      osc.frequency.setValueAtTime(800, now);
-      osc.frequency.exponentialRampToValueAtTime(300, now + 0.03);
+      // Renyah, bouncy pop khas Duolingo
+      osc.type = "triangle";
+      osc.frequency.setValueAtTime(1100, now);
+      osc.frequency.exponentialRampToValueAtTime(320, now + 0.04);
 
-      gain.gain.setValueAtTime(0.06, now);
-      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.04);
+      gain.gain.setValueAtTime(0.24, now);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
 
       osc.connect(gain);
       gain.connect(this.audioCtx.destination);
       osc.start(now);
-      osc.stop(now + 0.045);
+      osc.stop(now + 0.05);
     } catch (e) {
       console.warn("Audio playClick error:", e);
     }

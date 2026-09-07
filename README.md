@@ -2,7 +2,7 @@
 > *"Every Penny Tells a Story — Mengabadikan Jejak Keuangan dengan Sentuhan Kecerdasan Buatan & Estetika Meja Pos Klasik."*
 
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![AI Engine](https://img.shields.io/badge/AI_Brain-Gemini_2.0_Flash-orange.svg)](https://aistudio.google.com/)
+[![AI Engine](https://img.shields.io/badge/AI_Brain-Gemini_Flash_Lite-emerald.svg)](https://aistudio.google.com/)
 [![Database](https://img.shields.io/badge/Cloud_Database-Firebase_Firestore-yellow.svg)](https://firebase.google.com/)
 [![PWA Ready](https://img.shields.io/badge/PWA-Mobile_%26_Desktop-emerald.svg)](https://web.dev/progressive-web-apps/)
 
@@ -32,21 +32,25 @@ Seringkali kita malas mencatat keuangan karena aplikasi kas yang ada terasa memb
 
 ### 🌸 Partner Kolaborasi: Violet Evergarden
 - **Identitas**: Dinamai berdasarkan **Violet Evergarden** — simbol ketekunan, dedikasi, dan kesetiaan seorang *Auto Memory Doll* yang mencatat setiap baris kode layaknya surat kenangan.
-- **Protokol Keamanan "Arise"**: Setiap manipulasi file, eksekusi kode, dan pembuatan arsitektur dijalankan di bawah otorisasi resmi perintah *"Arise"*.
+- **Protokol Dua Fase & "Arise"**:
+  - **Fase [PEMBAHASAN] (Default)**: Diskusi, analisis kendala, dan pemaparan rencana perubahan. Violet dilarang menyentuh/mengubah kode sebelum ada instruksi "Arise".
+  - **Fase [EKSEKUSI]**: Hanya aktif setelah Chandra memberikan komando resmi *"Arise"*. Barulah berkas dan sistem diperbarui.
 
 ---
 
 ## 🏛️ 3. Fitur-Fitur
 
-### 📸 1. The Vision Receipt Scanner (Jepret Struk Otomatis)
-- Didukung oleh model **Google Gemini 2.0 Flash**.
+### 📸 1. The Vision Receipt Scanner (Jepret & Drag-Drop Struk)
+- Didukung oleh model **Google Gemini Flash Lite**.
 - Memindai foto struk belanjaan (Indomaret, Alfamart, kafe, SPBU, bon warung makan, dsb.) dalam waktu **~1 detik**.
+- Fitur **Drag and Drop** langsung ke dropzone atau klik untuk upload kamera.
 - Mengekstrak nama merchant, tanggal transaksi, kategori, rincian barang per item beserta harganya, pajak, diskon, dan total belanjaan.
 - Dilengkapi animasi **Laser Scanner Beam** bercahaya lembut saat proses pemindaian berlangsung.
 
-### 🎙️ 2. Quick Voice Expense (Curhat Suara)
-- Perekam suara taktil berbasis *MediaRecorder API*.
-- Kamu cukup berbicara santai (contoh: *"Beli es teh 4 ribu sama siomay 10 ribu"*), dan AI langsung membedah ucapanmu menjadi data transaksi terstruktur.
+### 🎙️ 2. Quick Voice Expense (Curhat Suara Taktil)
+- Perekam suara taktil berbasis *MediaRecorder API* dengan *timeslice chunking* 200ms & *AudioContext Live Wave Meter*.
+- Bar gelombang suara menari secara dinamis mengikuti kekuatan suara vokal mikrofon.
+- Kamu cukup berbicara santai (contoh: *"Beli es teh 4 ribu sama siomay 10 ribu"*), dan AI langsung membedah ucapanmu menjadi data transaksi terstruktur tanpa batas kuota berlebih (1.500 req/hari).
 
 ### 📊 3. Bento Stats Grid & Interactive Donut Chart
 - **Budget Progress Ring**: Melacak persentase sisa anggaran bulanan dengan bar indikator dinamis.
@@ -131,13 +135,13 @@ npm start
 ### C. Deploy ke Firebase Hosting (Online):
 ```bash
 npm run deploy
-# Aplikasi akan langsung LIVE di https://memony-2ae55.web.app
+# Aplikasi akan langsung LIVE di https://<project-id>.web.app
 ```
 
 ---
 
 ## 🗺️ 7. Roadmap Masa Depan
-- [x] V1.0: AI Receipt OCR dengan Gemini 2.0 Flash & Audio Synthesizer Taktil.
+- [x] V1.0: AI Receipt OCR dengan Gemini 3.6 Flash & Audio Synthesizer Taktil.
 - [x] V1.0: Realtime Cloud Firestore Sync & Offline Cache.
 - [x] V1.0: PWA Standalone Mobile Support & Ekspor Data CSV/JSON.
 - [ ] V1.1: Multi-Currency & Nilai Tukar Otomatis.

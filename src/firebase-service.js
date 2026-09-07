@@ -11,12 +11,19 @@ class FirebaseService {
     this.db = null;
     this.isInitialized = false;
     this.unsubscribeListener = null;
+    this.onUpdateCallback = null;
+  }
+
+  notifySubscribers(data) {
+    if (typeof this.onUpdateCallback === "function") {
+      this.onUpdateCallback(data);
+    }
   }
 
   init() {
     const config = window.MEMONY_CONFIG?.FIREBASE_CONFIG;
-    if (!config || !config.apiKey || config.apiKey === "YOUR_FIREBASE_API_KEY") {
-      console.warn("Firebase config belum diisi atau masih default. Menggunakan mode Local Storage.");
+    if (!config || !config.apiKey || config.apiKey === "YOUR_FIREBASE_API_KEY" || !config.projectId) {
+      console.log("📦 Mode Offline-First Aktif: Transaksi tersimpan aman di LocalStorage browser.");
       return false;
     }
 
@@ -45,9 +52,13 @@ class FirebaseService {
    * Pasang listener real-time ke koleksi transactions
    */
   subscribeToTransactions(onUpdate) {
+    this.onUpdateCallback = onUpdate;
+
+    // Selalu sajikan data lokal secara instan (0ms)
+    const localList = window.storageService.getTransactions();
+    if (onUpdate) onUpdate(localList);
+
     if (!this.isInitialized || !this.db) {
-      // Fallback ke local storage
-      if (onUpdate) onUpdate(window.storageService.getTransactions());
       return () => {};
     }
 
@@ -61,20 +72,20 @@ class FirebaseService {
             snapshot.forEach((doc) => {
               list.push({ id: doc.id, ...doc.data() });
             });
-            // Update local storage sebagai offline cache
-            window.storageService.saveTransactions(list);
-            if (onUpdate) onUpdate(list);
+            if (list.length > 0) {
+              window.storageService.saveTransactions(list);
+              this.notifySubscribers(list);
+            }
           },
           (err) => {
-            console.warn("Firestore snapshot error, falling back to LocalStorage:", err);
-            if (onUpdate) onUpdate(window.storageService.getTransactions());
+            console.warn("Firestore snapshot error (offline/permission):", err.message || err);
+            this.notifySubscribers(window.storageService.getTransactions());
           }
         );
 
       return this.unsubscribeListener;
     } catch (e) {
       console.warn("Gagal subscribe ke Firestore:", e);
-      if (onUpdate) onUpdate(window.storageService.getTransactions());
       return () => {};
     }
   }
@@ -83,15 +94,21 @@ class FirebaseService {
     // 1. Simpan ke local storage terlebih dahulu (optimistic UI)
     const localTx = window.storageService.addTransaction(tx);
 
-    // 2. Jika Firebase aktif, kirim ke Cloud
+    // 2. Beritahu subscriber seketika agar UI langsung menampilkan item baru
+    this.notifySubscribers(window.storageService.getTransactions());
+
+    // 3. Jika Firebase aktif, kirim ke Cloud dengan timeout 2.5s agar tidak pernah menggantung
     if (this.isInitialized && this.db) {
       try {
         const docRef = this.db.collection("transactions").doc(localTx.id);
         const { id, ...dataToSave } = localTx;
-        await docRef.set(dataToSave);
+        await Promise.race([
+          docRef.set(dataToSave),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout sinkronisasi Firestore Cloud")), 2500))
+        ]);
         console.log("Transaksi tersimpan di Firestore Cloud:", localTx.id);
       } catch (err) {
-        console.warn("Gagal menyimpan ke Firestore Cloud (tersimpan lokal):", err);
+        console.warn("Gagal menyimpan ke Firestore Cloud (tersimpan aman di lokal):", err.message || err);
       }
     }
 
@@ -100,13 +117,18 @@ class FirebaseService {
 
   async deleteTransaction(id) {
     window.storageService.deleteTransaction(id);
+    this.notifySubscribers(window.storageService.getTransactions());
 
     if (this.isInitialized && this.db) {
       try {
-        await this.db.collection("transactions").doc(id).delete();
+        const docRef = this.db.collection("transactions").doc(id);
+        await Promise.race([
+          docRef.delete(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout delete Firestore Cloud")), 2500))
+        ]);
         console.log("Transaksi dihapus dari Firestore Cloud:", id);
       } catch (err) {
-        console.warn("Gagal menghapus dari Firestore Cloud:", err);
+        console.warn("Gagal menghapus dari Firestore Cloud (terhapus di lokal):", err.message || err);
       }
     }
   }

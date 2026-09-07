@@ -38,14 +38,8 @@ document.addEventListener("DOMContentLoaded", () => {
   const elCameraInput = document.getElementById("receipt-camera-input");
   const elLaserBeam = document.getElementById("scan-laser-beam");
 
-  // Quick Hubs
-  const elHubVoice = document.getElementById("hub-voice-btn");
-  const elHubManual = document.getElementById("hub-manual-btn");
-
   // Modals
   const modalVerify = document.getElementById("modal-verify-scan");
-  const modalManual = document.getElementById("modal-manual-add");
-  const modalVoice = document.getElementById("modal-voice-record");
   const modalSettings = document.getElementById("modal-settings");
   const toastContainer = document.getElementById("toast-container");
 
@@ -53,6 +47,12 @@ document.addEventListener("DOMContentLoaded", () => {
   // INITIALIZATION
   // =========================================================================
   function initApp() {
+    // 0. Pastikan Scroll Selalu Bersih di Paling Atas (Laptop Viewport Safe)
+    if ("scrollRestoration" in history) {
+      history.scrollRestoration = "manual";
+    }
+    window.scrollTo(0, 0);
+
     // 1. Inisialisasi Firebase
     const fbConnected = window.firebaseService.init();
 
@@ -65,22 +65,91 @@ document.addEventListener("DOMContentLoaded", () => {
     // 3. Update Status Tombol Mute
     updateMuteButtonUI();
 
-    // 4. Inisialisasi Service Worker untuk PWA
-    if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js").catch(() => {});
+    // 4. Inisialisasi Tab Navigation System
+    initTabs();
+
+    // 5. Inisialisasi Three.js 3D Royal Coin (Centerpiece WebGL)
+    if (window.coin3dService) {
+      window.coin3dService.init("hero-3d-canvas-container");
     }
 
-    // 5. Animasi Pembuka Halaman
+    // 6. Inisialisasi 3D Bento Card Tilt & Sheen (Puma/Adidas style)
+    init3DCardTilt();
+
+    // 7. Inisialisasi Tactile Buttons
+    initMagneticButtons();
+
+    // 8. Inisialisasi Service Worker untuk PWA
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("./sw.js?v=9").catch(() => {});
+    }
+
+    // 9. Animasi Pembuka Halaman Kinetik
     if (window.anime) {
       window.anime({
-        targets: ".app-header, .hero-action-grid, .bento-stats-grid, .ledger-section",
+        targets: ".app-header, .tabs-nav-bar, .tab-pane.active",
         opacity: [0, 1],
-        translateY: [15, 0],
-        duration: 800,
-        delay: window.anime.stagger(100),
+        translateY: [20, 0],
+        duration: 900,
+        delay: window.anime.stagger(120),
         easing: "easeOutCubic"
       });
     }
+  }
+
+  // =========================================================================
+  // TABS NAVIGATION CONTROLLER
+  // =========================================================================
+  function initTabs() {
+    const tabButtons = document.querySelectorAll(".tab-btn");
+    const tabPanes = document.querySelectorAll(".tab-pane");
+
+    tabButtons.forEach((btn) => {
+      btn.addEventListener("click", () => {
+        const targetTabId = btn.getAttribute("data-tab");
+        if (!targetTabId) return;
+
+        // Reset scroll ke atas seketika agar header tidak terpotong
+        window.scrollTo({ top: 0, left: 0, behavior: "instant" });
+
+        tabButtons.forEach((b) => {
+          b.classList.remove("active");
+          b.setAttribute("aria-selected", "false");
+        });
+        tabPanes.forEach((p) => p.classList.remove("active"));
+
+        btn.classList.add("active");
+        btn.setAttribute("aria-selected", "true");
+        window.audioService.playClickSound();
+
+        const targetPane = document.getElementById(targetTabId);
+        if (targetPane) {
+          targetPane.classList.add("active");
+          if (window.anime) {
+            window.anime({
+              targets: targetPane,
+              opacity: [0, 1],
+              translateY: [12, 0],
+              duration: 350,
+              easing: "easeOutCubic"
+            });
+          }
+
+          // If switching to Vault & Ledger tab, trigger Three.js resize and Donut Chart redraw
+          if (targetTabId === "tab-ledger") {
+            if (window.coin3dService && window.coin3dService.resize) {
+              setTimeout(() => window.coin3dService.resize(), 60);
+            }
+            if (window.chartService && window.chartService.renderCategoryChart) {
+              const todayStr = new Date().toISOString().split("T")[0];
+              const currentYearMonth = todayStr.substring(0, 7);
+              const thisMonthTxs = transactions.filter((t) => (t.date || "").startsWith(currentYearMonth));
+              window.chartService.renderCategoryChart("category-chart-container", thisMonthTxs);
+            }
+          }
+        }
+      });
+    });
   }
 
   // =========================================================================
@@ -98,10 +167,42 @@ document.addEventListener("DOMContentLoaded", () => {
     const remainingBudget = Math.max(0, monthlyBudget - totalSpentThisMonth);
     const percentUsed = Math.min(100, Math.round((totalSpentThisMonth / (monthlyBudget || 1)) * 100));
 
-    // Update Header Numbers
-    elTotalSpent.textContent = "Rp " + totalSpentThisMonth.toLocaleString("id-ID");
-    elBudgetRemaining.textContent = "Sisa: Rp " + remainingBudget.toLocaleString("id-ID");
-    elBudgetPercent.textContent = percentUsed + "%";
+    // Update Header Numbers with Kinetic Rolling Counter (Anime.js)
+    if (window.anime) {
+      const currentSpent = parseInt(elTotalSpent.getAttribute("data-val") || "0", 10);
+      const currentRemain = parseInt(elBudgetRemaining.getAttribute("data-val") || String(monthlyBudget), 10);
+      const currentPct = parseInt(elBudgetPercent.getAttribute("data-val") || "0", 10);
+
+      const counterState = {
+        spent: currentSpent,
+        remain: currentRemain,
+        percent: currentPct
+      };
+
+      window.anime({
+        targets: counterState,
+        spent: totalSpentThisMonth,
+        remain: remainingBudget,
+        percent: percentUsed,
+        round: 1,
+        duration: 900,
+        easing: "easeOutExpo",
+        update: () => {
+          elTotalSpent.textContent = "Rp " + Math.round(counterState.spent).toLocaleString("id-ID");
+          elBudgetRemaining.textContent = "Sisa: Rp " + Math.round(counterState.remain).toLocaleString("id-ID");
+          elBudgetPercent.textContent = Math.round(counterState.percent) + "%";
+        }
+      });
+
+      elTotalSpent.setAttribute("data-val", totalSpentThisMonth);
+      elBudgetRemaining.setAttribute("data-val", remainingBudget);
+      elBudgetPercent.setAttribute("data-val", percentUsed);
+    } else {
+      elTotalSpent.textContent = "Rp " + totalSpentThisMonth.toLocaleString("id-ID");
+      elBudgetRemaining.textContent = "Sisa: Rp " + remainingBudget.toLocaleString("id-ID");
+      elBudgetPercent.textContent = percentUsed + "%";
+    }
+
     elBudgetBarFill.style.width = percentUsed + "%";
     elTxCount.textContent = transactions.length + " Transaksi";
 
@@ -174,13 +275,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Pasang event hapus
     document.querySelectorAll(".tx-del-btn").forEach((btn) => {
-      btn.addEventListener("click", (e) => {
+      btn.addEventListener("click", async (e) => {
         e.stopPropagation();
         const id = btn.getAttribute("data-del-id");
-        if (confirm("Apakah kamu yakin ingin menghapus catatan transaksi ini?")) {
-          window.firebaseService.deleteTransaction(id);
+        if (confirm("Apakah kamu yakin ingin menghapus catatan transaksi ini dari buku kas & cloud?")) {
+          await window.firebaseService.deleteTransaction(id);
+          transactions = window.storageService.getTransactions();
+          renderDashboard();
           window.audioService.playClickSound();
-          showToast("Catatan transaksi telah dihapus.");
+          showToast("🗑️ Catatan transaksi telah dihapus dari lokal & cloud.");
         }
       });
     });
@@ -221,27 +324,40 @@ document.addEventListener("DOMContentLoaded", () => {
   // =========================================================================
   // AI RECEIPT SCANNER & DROPZONE
   // =========================================================================
-  elDropzone.addEventListener("click", (e) => {
-    if (e.target.closest("button") || e.target.closest("label")) return;
-    elFileInput.click();
-  });
+  // Window-level drop protection to prevent accidental browser navigation
+  window.addEventListener("dragover", (e) => e.preventDefault(), false);
+  window.addEventListener("drop", (e) => e.preventDefault(), false);
 
-  elDropzone.addEventListener("dragover", (e) => {
-    e.preventDefault();
-    elDropzone.classList.add("dragover");
-  });
+  if (elDropzone) {
+    elDropzone.addEventListener("click", (e) => {
+      if (e.target.closest("button") || e.target.closest("label") || e.target.closest("input")) return;
+      elFileInput.click();
+    });
 
-  elDropzone.addEventListener("dragleave", () => {
-    elDropzone.classList.remove("dragover");
-  });
+    elDropzone.addEventListener("dragenter", (e) => {
+      e.preventDefault();
+      elDropzone.classList.add("drag-active");
+    });
 
-  elDropzone.addEventListener("drop", (e) => {
-    e.preventDefault();
-    elDropzone.classList.remove("dragover");
-    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
-      handleFileSelected(e.dataTransfer.files[0]);
-    }
-  });
+    elDropzone.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      elDropzone.classList.add("drag-active");
+    });
+
+    elDropzone.addEventListener("dragleave", (e) => {
+      if (!elDropzone.contains(e.relatedTarget)) {
+        elDropzone.classList.remove("drag-active");
+      }
+    });
+
+    elDropzone.addEventListener("drop", (e) => {
+      e.preventDefault();
+      elDropzone.classList.remove("drag-active");
+      if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+        handleFileSelected(e.dataTransfer.files[0]);
+      }
+    });
+  }
 
   elFileInput.addEventListener("change", (e) => {
     if (e.target.files && e.target.files.length > 0) {
@@ -285,17 +401,20 @@ document.addEventListener("DOMContentLoaded", () => {
   function fileToBase64(file) {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = (err) => reject(err);
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = reject;
       reader.readAsDataURL(file);
     });
   }
 
   // =========================================================================
-  // VERIFICATION MODAL
+  // VERIFICATION MODAL & OPTIMISTIC INSTANT SAVE
   // =========================================================================
-  function openVerificationModal(data, receiptImg = null) {
-    currentScannedData = data;
+  function openVerificationModal(data, imageBase64 = null) {
+    currentScannedData = {
+      ...data,
+      receiptImage: imageBase64
+    };
 
     document.getElementById("verify-store").value = data.storeName || "";
     document.getElementById("verify-date").value = data.date || new Date().toISOString().split("T")[0];
@@ -322,92 +441,314 @@ document.addEventListener("DOMContentLoaded", () => {
       tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; color: var(--text-muted);">Tidak ada rincian per item</td></tr>`;
     }
 
+    if (btnSaveVerified) {
+      btnSaveVerified.disabled = false;
+      btnSaveVerified.textContent = "🌸 Cap & Simpan ke Buku Kas";
+    }
+
     openModal(modalVerify);
   }
 
-  document.getElementById("btn-save-verified-tx").addEventListener("click", async () => {
-    if (!currentScannedData) return;
+  const btnSaveVerified = document.getElementById("btn-save-verified-tx");
+  if (btnSaveVerified) {
+    btnSaveVerified.addEventListener("click", async (e) => {
+      e.preventDefault();
+      if (btnSaveVerified.disabled) return;
+      btnSaveVerified.disabled = true;
 
-    // Ambil nilai terverifikasi dari input
-    const storeName = document.getElementById("verify-store").value.trim() || "Toko";
-    const date = document.getElementById("verify-date").value || new Date().toISOString().split("T")[0];
-    const category = document.getElementById("verify-category").value;
-    const totalAmount = Number(document.getElementById("verify-total").value) || 0;
-    const paymentMethod = document.getElementById("verify-payment").value;
-    const notes = document.getElementById("verify-notes").value.trim();
+      // Ambil nilai terverifikasi dari elemen input langsung
+      const storeName = document.getElementById("verify-store")?.value.trim() || "Toko";
+      const date = document.getElementById("verify-date")?.value || new Date().toISOString().split("T")[0];
+      const category = document.getElementById("verify-category")?.value || "Makanan & Minuman";
+      const totalAmount = Number(document.getElementById("verify-total")?.value) || 0;
+      const paymentMethod = document.getElementById("verify-payment")?.value.trim() || "Tunai";
+      const notes = document.getElementById("verify-notes")?.value.trim() || "";
 
-    const newTx = {
-      storeName,
-      date,
-      category,
-      totalAmount,
-      paymentMethod,
-      notes,
-      items: currentScannedData.items || []
-    };
+      // Ekstrak rincian item dari tabel DOM (mengakomodasi editan manual pengguna)
+      const items = [];
+      const itemRows = document.querySelectorAll("#verify-items-tbody tr");
+      itemRows.forEach((row) => {
+        const nameInput = row.querySelector('[data-field="name"]');
+        const qtyInput = row.querySelector('[data-field="qty"]');
+        const priceInput = row.querySelector('[data-field="price"]');
+        if (nameInput) {
+          const name = nameInput.value.trim();
+          const qty = Math.max(1, Number(qtyInput?.value) || 1);
+          const price = Math.max(0, Number(priceInput?.value) || 0);
+          if (name) {
+            items.push({ name, qty, price, subtotal: price * qty });
+          }
+        }
+      });
 
-    await window.firebaseService.saveTransaction(newTx);
+      // Fallback item jika tabel kosong
+      if (items.length === 0 && currentScannedData && Array.isArray(currentScannedData.items) && currentScannedData.items.length > 0) {
+        items.push(...currentScannedData.items);
+      }
+      if (items.length === 0 && totalAmount > 0) {
+        items.push({ name: storeName, qty: 1, price: totalAmount, subtotal: totalAmount });
+      }
 
-    // Audio SFX Taktil
-    window.audioService.playWaxStampSound();
-    setTimeout(() => window.audioService.playRegisterDing(), 150);
+      const newTx = {
+        storeName,
+        date,
+        category,
+        totalAmount,
+        paymentMethod,
+        notes,
+        items,
+        receiptImage: currentScannedData?.receiptImage || null
+      };
 
-    closeModal(modalVerify);
-    showToast("✨ Transaksi berhasil dicap & disimpan ke buku kas!");
-  });
+      // Optimistic Instant-Close: tutup modal seketika (0ms) & bersihkan data scan
+      currentScannedData = null;
+      closeModal(modalVerify);
+
+      // Audio SFX Taktil
+      window.audioService.playWaxStampSound();
+      setTimeout(() => window.audioService.playRegisterDing(), 150);
+      showToast("✨ Transaksi berhasil dicap & masuk ke Buku Kas!");
+
+      try {
+        await window.firebaseService.saveTransaction(newTx);
+      } catch (err) {
+        console.error("Gagal simpan transaksi:", err);
+      } finally {
+        // Selalu sinkronkan state transaksi & perbarui tampilan Vault
+        transactions = window.storageService.getTransactions();
+        renderDashboard();
+        btnSaveVerified.disabled = false;
+        btnSaveVerified.textContent = "🌸 Cap & Simpan ke Buku Kas";
+      }
+    });
+  }
 
   // =========================================================================
-  // VOICE RECORDING HUB
+  // VOICE RECORDING STATION (Dedicated In-Tab Curhat Suara)
   // =========================================================================
-  elHubVoice.addEventListener("click", () => {
-    openModal(modalVoice);
-    startVoiceRecording();
-  });
+  let voiceTimerInterval = null;
+  let voiceSeconds = 0;
+  let currentAudioBlob = null;
+  let currentBase64Audio = null;
+  let voiceAudioCtx = null;
+  let voiceAnalyser = null;
+  let voiceAnimFrame = null;
+
+  const phaseStandby = document.getElementById("voice-standby-phase");
+  const phaseRecording = document.getElementById("voice-recording-phase");
+  const phasePreview = document.getElementById("voice-preview-phase");
+  const phaseProcessing = document.getElementById("voice-processing-phase");
+  const elVoiceTimer = document.getElementById("voice-timer-display");
+  const elAudioPreview = document.getElementById("voice-audio-preview");
+  const btnStartVoiceTab = document.getElementById("btn-start-voice-tab");
+  const btnStopVoice = document.getElementById("btn-stop-voice");
+  const btnReRecordVoice = document.getElementById("btn-re-record-voice");
+  const btnSubmitVoice = document.getElementById("btn-submit-voice");
+
+  if (btnStartVoiceTab) {
+    btnStartVoiceTab.addEventListener("click", () => {
+      startVoiceRecording();
+    });
+  }
+
+  function resetVoiceUI() {
+    if (voiceTimerInterval) {
+      clearInterval(voiceTimerInterval);
+      voiceTimerInterval = null;
+    }
+    if (voiceAnimFrame) {
+      cancelAnimationFrame(voiceAnimFrame);
+      voiceAnimFrame = null;
+    }
+    if (voiceAudioCtx && voiceAudioCtx.state !== "closed") {
+      voiceAudioCtx.close().catch(() => {});
+      voiceAudioCtx = null;
+    }
+    voiceAnalyser = null;
+
+    const waveBars = document.querySelectorAll(".wave-bar");
+    waveBars.forEach((b) => {
+      b.classList.remove("active");
+      b.style.transform = "";
+    });
+
+    voiceSeconds = 0;
+    currentAudioBlob = null;
+    currentBase64Audio = null;
+    if (elAudioPreview) {
+      elAudioPreview.pause();
+      elAudioPreview.src = "";
+    }
+    if (phaseStandby) phaseStandby.style.display = "block";
+    if (phaseRecording) phaseRecording.style.display = "none";
+    if (phasePreview) phasePreview.style.display = "none";
+    if (phaseProcessing) phaseProcessing.style.display = "none";
+    if (btnSubmitVoice) {
+      btnSubmitVoice.disabled = false;
+      btnSubmitVoice.textContent = "✨ Analisis dengan AI";
+    }
+    if (elVoiceTimer) elVoiceTimer.textContent = "00:00";
+  }
 
   async function startVoiceRecording() {
+    resetVoiceUI();
+    if (phaseStandby) phaseStandby.style.display = "none";
+    if (phaseRecording) phaseRecording.style.display = "block";
     audioChunks = [];
-    const statusText = document.getElementById("voice-status-text");
     const waveBars = document.querySelectorAll(".wave-bar");
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+
+      // Pasang Web Audio API Analyser untuk visualisasi volume suara nyata
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (AudioContextClass) {
+        try {
+          voiceAudioCtx = new AudioContextClass();
+          const source = voiceAudioCtx.createMediaStreamSource(stream);
+          voiceAnalyser = voiceAudioCtx.createAnalyser();
+          voiceAnalyser.fftSize = 64;
+          source.connect(voiceAnalyser);
+
+          const freqData = new Uint8Array(voiceAnalyser.frequencyBinCount);
+          const updateVolumeMeter = () => {
+            if (!voiceAnalyser) return;
+            voiceAnalyser.getByteFrequencyData(freqData);
+            let sum = 0;
+            for (let i = 0; i < freqData.length; i++) {
+              sum += freqData[i];
+            }
+            const avg = sum / freqData.length;
+            // Skala dinamis 0.4 sampai 2.4 sesuai keras-lemahnya suara
+            const baseScale = Math.max(0.4, Math.min(2.4, avg / 22));
+            waveBars.forEach((bar, idx) => {
+              const barScale = Math.max(0.35, baseScale * (0.75 + (idx % 3) * 0.25));
+              bar.style.transform = `scaleY(${barScale.toFixed(2)})`;
+            });
+            voiceAnimFrame = requestAnimationFrame(updateVolumeMeter);
+          };
+          updateVolumeMeter();
+        } catch (ctxErr) {
+          console.warn("Analyser mic tidak aktif:", ctxErr);
+        }
+      }
+
       mediaRecorder = new MediaRecorder(stream);
 
       mediaRecorder.ondataavailable = (e) => {
-        if (e.data.size > 0) audioChunks.push(e.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        waveBars.forEach((b) => b.classList.remove("active"));
-        statusText.textContent = "🧠 Gemini sedang mendengarkan ucapanmu...";
-
-        const audioBlob = new Blob(audioChunks, { type: "audio/webm" });
-        const base64Audio = await blobToBase64(audioBlob);
-
-        try {
-          const parsed = await window.geminiService.parseVoiceExpense(base64Audio, "audio/webm");
-          closeModal(modalVoice);
-          openVerificationModal(parsed);
-        } catch (err) {
-          alert("Gagal memproses suara: " + err.message);
-          closeModal(modalVoice);
+        if (e.data && e.data.size > 0) {
+          audioChunks.push(e.data);
         }
       };
 
-      mediaRecorder.start();
+      mediaRecorder.onstop = async () => {
+        if (voiceAnimFrame) {
+          cancelAnimationFrame(voiceAnimFrame);
+          voiceAnimFrame = null;
+        }
+        if (voiceAudioCtx && voiceAudioCtx.state !== "closed") {
+          voiceAudioCtx.close().catch(() => {});
+          voiceAudioCtx = null;
+        }
+        voiceAnalyser = null;
+
+        // Hentikan stream mikrofon agar icon mic browser mati
+        stream.getTracks().forEach((track) => track.stop());
+        waveBars.forEach((b) => {
+          b.classList.remove("active");
+          b.style.transform = "";
+        });
+        if (voiceTimerInterval) clearInterval(voiceTimerInterval);
+
+        currentAudioBlob = new Blob(audioChunks, { type: "audio/webm" });
+        currentBase64Audio = await blobToBase64(currentAudioBlob);
+
+        // Tampilkan Fase 2: Preview Audio
+        if (elAudioPreview && currentAudioBlob) {
+          const audioUrl = URL.createObjectURL(currentAudioBlob);
+          elAudioPreview.src = audioUrl;
+        }
+
+        if (phaseRecording) phaseRecording.style.display = "none";
+        if (phasePreview) phasePreview.style.display = "block";
+        if (phaseProcessing) phaseProcessing.style.display = "none";
+        window.audioService.playClickSound();
+      };
+
+      // Mulai dengan timeslice 200ms agar data di-buffer secara terus-menerus
+      mediaRecorder.start(200);
       waveBars.forEach((b) => b.classList.add("active"));
-      statusText.textContent = "🎙️ Sedang merekam... Ucapkan pengeluaranmu!";
+      window.audioService.playClickSound();
+
+      // Timer durasi rekaman langsung
+      voiceSeconds = 0;
+      voiceTimerInterval = setInterval(() => {
+        voiceSeconds++;
+        const mins = String(Math.floor(voiceSeconds / 60)).padStart(2, "0");
+        const secs = String(voiceSeconds % 60).padStart(2, "0");
+        if (elVoiceTimer) elVoiceTimer.textContent = `${mins}:${secs}`;
+      }, 1000);
+
     } catch (err) {
       alert("Tidak dapat mengakses mikrofon: " + err.message);
-      closeModal(modalVoice);
+      resetVoiceUI();
     }
   }
 
-  document.getElementById("btn-stop-voice").addEventListener("click", () => {
-    if (mediaRecorder && mediaRecorder.state === "recording") {
-      mediaRecorder.stop();
-    }
-  });
+  // Tombol Selesai Merekam
+  if (btnStopVoice) {
+    btnStopVoice.addEventListener("click", () => {
+      if (mediaRecorder && mediaRecorder.state === "recording") {
+        mediaRecorder.stop();
+        window.audioService.playClickSound();
+      }
+    });
+  }
+
+  // Tombol Rekam Ulang
+  if (btnReRecordVoice) {
+    btnReRecordVoice.addEventListener("click", () => {
+      window.audioService.playClickSound();
+      startVoiceRecording();
+    });
+  }
+
+  // Tombol Kirim ke AI (Full Power AI Analysis)
+  if (btnSubmitVoice) {
+    btnSubmitVoice.addEventListener("click", async () => {
+      if (!currentBase64Audio || btnSubmitVoice.disabled) return;
+
+      // Validasi rekaman audio kosong atau terlalu pendek (di bawah 2KB atau 1 detik)
+      if (!currentAudioBlob || currentAudioBlob.size < 2000 || voiceSeconds < 1) {
+        showToast("⚠️ Rekaman kosong atau terlalu singkat. Pastikan mic aktif dan coba rekam ulang!", "danger");
+        return;
+      }
+
+      // Kunci tombol agar anti-spam
+      btnSubmitVoice.disabled = true;
+      window.audioService.playClickSound();
+
+      // Tampilkan Fase 3: AI Processing State
+      if (phaseRecording) phaseRecording.style.display = "none";
+      if (phasePreview) phasePreview.style.display = "none";
+      if (phaseProcessing) phaseProcessing.style.display = "block";
+
+      try {
+        const audioMime = (currentAudioBlob && currentAudioBlob.type) || "audio/webm";
+        const parsed = await window.geminiService.parseVoiceExpense(currentBase64Audio, audioMime);
+        resetVoiceUI();
+        if (parsed.transcription) {
+          showToast(`🎧 Didengar: "${parsed.transcription}"`);
+        }
+        openVerificationModal(parsed);
+      } catch (err) {
+        alert("Gagal memproses suara: " + err.message);
+        if (phaseProcessing) phaseProcessing.style.display = "none";
+        if (phasePreview) phasePreview.style.display = "block";
+        btnSubmitVoice.disabled = false;
+      }
+    });
+  }
 
   function blobToBase64(blob) {
     return new Promise((resolve) => {
@@ -418,67 +759,131 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   // =========================================================================
-  // MANUAL FAST ADD HUB
+  // MANUAL FAST ADD STATION (Dedicated In-Tab Form)
   // =========================================================================
-  elHubManual.addEventListener("click", () => {
-    document.getElementById("manual-date").value = new Date().toISOString().split("T")[0];
-    document.getElementById("manual-store").value = "";
-    document.getElementById("manual-amount").value = "";
-    document.getElementById("manual-notes").value = "";
-    openModal(modalManual);
-  });
-
-  document.getElementById("form-manual-add").addEventListener("submit", async (e) => {
-    e.preventDefault();
-
-    const storeName = document.getElementById("manual-store").value.trim() || "Pengeluaran";
-    const totalAmount = Number(document.getElementById("manual-amount").value) || 0;
-    const category = document.getElementById("manual-category").value;
-    const date = document.getElementById("manual-date").value || new Date().toISOString().split("T")[0];
-    const notes = document.getElementById("manual-notes").value.trim();
-
-    if (totalAmount <= 0) {
-      alert("Masukkan nominal yang valid.");
-      return;
+  const formManual = document.getElementById("form-manual-add");
+  if (formManual) {
+    const elManualDate = document.getElementById("manual-date");
+    if (elManualDate) {
+      elManualDate.value = new Date().toISOString().split("T")[0];
     }
 
-    const tx = {
-      storeName,
-      totalAmount,
-      category,
-      date,
-      notes,
-      paymentMethod: "Tunai",
-      items: [{ name: storeName, qty: 1, price: totalAmount, subtotal: totalAmount }]
-    };
+    formManual.addEventListener("submit", async (e) => {
+      e.preventDefault();
 
-    await window.firebaseService.saveTransaction(tx);
-    window.audioService.playWaxStampSound();
-    closeModal(modalManual);
-    showToast("📝 Transaksi manual tersimpan.");
-  });
+      const storeName = document.getElementById("manual-store").value.trim() || "Pengeluaran";
+      const totalAmount = Number(document.getElementById("manual-amount").value) || 0;
+      const category = document.getElementById("manual-category").value;
+      const date = document.getElementById("manual-date").value || new Date().toISOString().split("T")[0];
+      const notes = document.getElementById("manual-notes").value.trim();
+
+      if (totalAmount <= 0) {
+        alert("Masukkan nominal yang valid.");
+        return;
+      }
+
+      const tx = {
+        storeName,
+        totalAmount,
+        category,
+        date,
+        notes,
+        paymentMethod: "Tunai",
+        items: [{ name: storeName, qty: 1, price: totalAmount, subtotal: totalAmount }]
+      };
+
+      // Optimistic instant reset
+      document.getElementById("manual-store").value = "";
+      document.getElementById("manual-amount").value = "";
+      document.getElementById("manual-notes").value = "";
+
+      // Audio & feedback
+      window.audioService.playWaxStampSound();
+      setTimeout(() => window.audioService.playRegisterDing(), 150);
+      showToast("📝 Transaksi manual tersimpan ke buku kas!");
+
+      try {
+        await window.firebaseService.saveTransaction(tx);
+      } catch (err) {
+        console.error("Gagal simpan transaksi manual:", err);
+      } finally {
+        transactions = window.storageService.getTransactions();
+        renderDashboard();
+      }
+    });
+  }
 
   // =========================================================================
   // SETTINGS & EXPORT
   // =========================================================================
+  const elApiKeyStatus = document.getElementById("api-key-status");
+  const elApiKeyInput = document.getElementById("setting-api-key");
+  const elBtnClearKey = document.getElementById("btn-clear-api-key");
+
+  function updateApiKeyStatusUI() {
+    if (!elApiKeyStatus || !elApiKeyInput) return;
+    const hasKey = window.geminiService.hasApiKey();
+    if (hasKey) {
+      elApiKeyStatus.className = "api-key-status-badge status-active";
+      elApiKeyStatus.innerHTML = `<span>🟢 Kunci Gemini AI Terhubung</span><span style="font-size:11px; opacity:0.85;">Tersimpan Lokal</span>`;
+      elApiKeyInput.placeholder = "Ketik kunci baru jika ingin mengganti...";
+      elApiKeyInput.value = "";
+      if (elBtnClearKey) elBtnClearKey.style.display = "inline-flex";
+    } else {
+      elApiKeyStatus.className = "api-key-status-badge status-empty";
+      elApiKeyStatus.innerHTML = `<span>⚪ Belum Ada Kunci API</span><span style="font-size:11px; opacity:0.85;">Fitur AI Nonaktif</span>`;
+      elApiKeyInput.placeholder = "Tempel Google Gemini API Key di sini...";
+      elApiKeyInput.value = "";
+      if (elBtnClearKey) elBtnClearKey.style.display = "none";
+    }
+  }
+
   elSettingsBtn.addEventListener("click", () => {
     document.getElementById("setting-budget").value = window.storageService.getBudget();
-    document.getElementById("setting-api-key").value = window.geminiService.getApiKey();
+    const elModelSelect = document.getElementById("setting-gemini-model");
+    if (elModelSelect) {
+      elModelSelect.value = window.geminiService.getModel();
+    }
+    updateApiKeyStatusUI();
     openModal(modalSettings);
   });
+
+  if (elBtnClearKey) {
+    elBtnClearKey.addEventListener("click", () => {
+      if (confirm("Hapus kunci API dari penyimpanan browser lokal?")) {
+        window.geminiService.removeApiKey();
+        updateApiKeyStatusUI();
+        window.audioService.playClickSound();
+        showToast("🗑️ Kunci API berhasil dihapus.");
+      }
+    });
+  }
 
   document.getElementById("form-settings").addEventListener("submit", (e) => {
     e.preventDefault();
     const newBudget = Number(document.getElementById("setting-budget").value) || 1500000;
-    const newKey = document.getElementById("setting-api-key").value.trim();
+    const newKey = elApiKeyInput.value.trim();
+    const elModelSelect = document.getElementById("setting-gemini-model");
+    const newModel = elModelSelect ? elModelSelect.value : null;
 
     window.storageService.setBudget(newBudget);
-    if (newKey) window.geminiService.setApiKey(newKey);
+    if (newKey) {
+      window.geminiService.setApiKey(newKey);
+      elApiKeyInput.value = "";
+    }
+    if (newModel) {
+      window.geminiService.setModel(newModel);
+      const badge = document.querySelector(".brand-badge");
+      if (badge) {
+        badge.textContent = newModel.includes("lite") ? "Gemini Flash Lite" : "Gemini Flash";
+      }
+    }
 
+    updateApiKeyStatusUI();
     closeModal(modalSettings);
     window.audioService.playClickSound();
     renderDashboard();
-    showToast("⚙️ Pengaturan berhasil diperbarui.");
+    showToast("⚙️ Pengaturan & Model AI berhasil diperbarui.");
   });
 
   elExportCsvBtn.addEventListener("click", () => {
@@ -609,6 +1014,45 @@ document.addEventListener("DOMContentLoaded", () => {
       .replace(/>/g, "&gt;")
       .replace(/"/g, "&quot;")
       .replace(/'/g, "&#039;");
+  }
+
+  // =========================================================================
+  // 3D KINETIC PHYSICS (Puma & Adidas Athletic Style)
+  // =========================================================================
+  function init3DCardTilt() {
+    // Sheen & tilt hanya untuk centerpiece 3D coin stage agar form & station tetap stabil
+    const tiltCards = document.querySelectorAll("#coin-stage-card.bento-card-tilt");
+    tiltCards.forEach((card) => {
+      if (!card.querySelector(".card-sheen-overlay")) {
+        const sheen = document.createElement("div");
+        sheen.className = "card-sheen-overlay";
+        card.appendChild(sheen);
+      }
+
+      card.addEventListener("mousemove", (e) => {
+        const rect = card.getBoundingClientRect();
+        const x = e.clientX - rect.left;
+        const y = e.clientY - rect.top;
+
+        const centerX = rect.width / 2;
+        const centerY = rect.height / 2;
+
+        const rotateX = ((y - centerY) / centerY) * -6.5;
+        const rotateY = ((x - centerX) / centerX) * 6.5;
+
+        card.style.transform = `perspective(1000px) rotateX(${rotateX.toFixed(2)}deg) rotateY(${rotateY.toFixed(2)}deg) scale3d(1.015, 1.015, 1.015)`;
+        card.style.setProperty("--sheen-x", `${(x / rect.width) * 100}%`);
+        card.style.setProperty("--sheen-y", `${(y / rect.height) * 100}%`);
+      });
+
+      card.addEventListener("mouseleave", () => {
+        card.style.transform = "perspective(1000px) rotateX(0deg) rotateY(0deg) scale3d(1, 1, 1)";
+      });
+    });
+  }
+
+  function initMagneticButtons() {
+    // Duolingo Tactile buttons mengandalkan CSS :active push-down murni untuk sensasi renyah tanpa jitter
   }
 
   // Jalankan Aplikasi
