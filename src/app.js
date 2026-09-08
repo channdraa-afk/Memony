@@ -81,7 +81,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // 8. Inisialisasi Service Worker untuk PWA
     if ("serviceWorker" in navigator) {
-      navigator.serviceWorker.register("./sw.js?v=9").catch(() => {});
+      navigator.serviceWorker.register("./sw.js?v=10").catch(() => {});
     }
 
     // 9. Animasi Pembuka Halaman Kinetik
@@ -226,13 +226,44 @@ document.addEventListener("DOMContentLoaded", () => {
     const filtered = filterTransactions(transactions, currentFilter, searchQuery);
 
     if (filtered.length === 0) {
-      elTxList.innerHTML = `
-        <div class="empty-chart-state" style="padding: 40px 10px;">
-          <div style="font-size: 36px; margin-bottom: 8px;">📜</div>
-          <p style="font-weight: 700; color: var(--text-main);">Tidak ada catatan transaksi yang cocok.</p>
-          <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Jepret struk belanjaanmu atau tambah transaksi manual di atas.</p>
-        </div>
-      `;
+      if (transactions.length === 0) {
+        elTxList.innerHTML = `
+          <div class="empty-chart-state" style="padding: 44px 16px; text-align: center; background: var(--surface-card-warm); border: 1.5px dashed var(--border-warm-dark); border-radius: var(--radius-lg); margin: 8px 0;">
+            <div style="font-size: 44px; margin-bottom: 12px;">👑</div>
+            <h3 style="font-size: 16px; font-weight: 800; color: var(--text-main); margin-bottom: 6px;">Buku Kas Kerajaan Masih Bersih & Rapi</h3>
+            <p style="font-size: 13px; color: var(--text-muted); max-width: 420px; margin: 0 auto 20px; line-height: 1.6;">
+              Setiap keping pengeluaran adalah cerita berharga. Mulailah mengukir catatan transaksi pertamamu sekarang!
+            </p>
+            <div style="display: flex; gap: 10px; justify-content: center; flex-wrap: wrap;">
+              <button type="button" class="btn-tactile btn-primary btn-jump-tab" data-target="tab-scan" style="padding: 9px 16px; font-size: 13px;">
+                📸 Pindai Struk
+              </button>
+              <button type="button" class="btn-tactile btn-gold btn-jump-tab" data-target="tab-voice" style="padding: 9px 16px; font-size: 13px;">
+                🎙️ Curhat Suara
+              </button>
+              <button type="button" class="btn-tactile btn-jump-tab" data-target="tab-manual" style="padding: 9px 16px; font-size: 13px;">
+                ✏️ Catat Manual
+              </button>
+            </div>
+          </div>
+        `;
+        // Pasang event klik pada tombol aksi cepat
+        elTxList.querySelectorAll(".btn-jump-tab").forEach((btn) => {
+          btn.addEventListener("click", () => {
+            const target = btn.getAttribute("data-target");
+            const targetBtn = document.querySelector(`.tab-btn[data-tab="${target}"]`);
+            if (targetBtn) targetBtn.click();
+          });
+        });
+      } else {
+        elTxList.innerHTML = `
+          <div class="empty-chart-state" style="padding: 36px 16px; text-align: center;">
+            <div style="font-size: 36px; margin-bottom: 8px;">🔍</div>
+            <p style="font-weight: 700; color: var(--text-main);">Tidak ada catatan transaksi yang cocok.</p>
+            <p style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Coba gunakan kata kunci lain atau pilih filter "Semua".</p>
+          </div>
+        `;
+      }
       return;
     }
 

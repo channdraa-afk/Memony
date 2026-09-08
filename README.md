@@ -67,72 +67,97 @@ Seringkali kita malas mencatat keuangan karena aplikasi kas yang ada terasa memb
 - Dapat diinstal di layar utama smartphone (*Add to Home Screen*) dan langsung mengakses kamera ponsel layaknya aplikasi native.
 
 ### 🔄 6. Dual-Engine Storage (Cloud + Offline First)
-- **Cloud Firestore**: Sinkronisasi *real-time* otomatis (jepret struk di HP saat di luar, langsung muncul di dashboard laptop saat di rumah).
-- **LocalStorage Fallback**: Tetap dapat digunakan 100% saat tidak ada koneksi internet.
+- **LocalStorage Master**: Transaksi disimpan detik itu juga secara lokal (*0ms instant reactive*), menjamin aplikasi 100% berfungsi penuh tanpa internet maupun tanpa akun cloud.
+- **Cloud Firestore (Opsional)**: Mendukung sinkronisasi *real-time* multi-perangkat antar HP dan laptop dengan proteksi *timeout* 2.5 detik.
 
 ---
 
-## 🛡️ 4. Protokol Keamanan & Zero-Leak Policy
+## 🏗️ 4. Arsitektur Sistem (Dual-Engine Pipeline)
 
-Project ini dibangun dengan standar keamanan industri (*Security by Design*):
+```mermaid
+graph TD
+    User([👤 Pengguna / Chandra]) -->|Jepret Struk / Drag & Drop| Vision[📸 Tab 1: Vision OCR]
+    User -->|Curhat Suara 200ms Timeslice| Voice[🎙️ Tab 2: Audio Parser]
+    User -->|Catat Cepat Tanpa Struk| Manual[✏️ Tab 3: Manual Entry]
 
-1. 🔒 **Kunci Rahasia Terisolasi**:
-   File `config.local.js` dan `.env` otomatis dikecualikan dari Git melalui `.gitignore`. Kunci Gemini API dan kredensial Firebase tidak akan pernah terunggah ke GitHub publik.
-2. 🧱 **Kebal SQL Injection**:
-   Menggunakan Cloud Firestore NoSQL SDK dengan *parameterized objects*, sehingga 100% kebal terhadap eksploitasi SQL injection.
-3. 🧼 **Sanitasi Data & Proteksi XSS**:
-   Semua teks hasil ekstraksi AI disaring ketat sebelum dirender ke DOM untuk mencegah eksekusi skrip jahat (*Cross-Site Scripting*).
-4. 🛡️ **Firebase Security Rules**:
-   Akses database dilindungi oleh aturan keamanan Firestore resmi.
+    Vision -->|Multimodal Image Base64| Gemini[⚡ Google Gemini Flash Lite]
+    Voice -->|Multimodal Audio WebM| Gemini
+    
+    Gemini -->|JSON Parsing & Slang Handler| Engine[🧠 Transaction Validator]
+    Manual -->|Direct Payload| Engine
+    
+    Engine -->|Simpan Instan 0ms| LocalStorage[(📦 LocalStorage Browser)]
+    Engine -.->|Cloud Sync Timeout 2.5s| Cloud[(🔥 Firebase Firestore)]
+    
+    LocalStorage --> Vault[👑 Tab 4: Buku Kas & 3D Vault]
+    Vault --> ThreeJS[✨ Three.js 3D Kinetic Royal Coin]
+    Vault --> Donut[📊 Anime.js Bento Donut Chart]
+    Vault --> WebAudio[🔔 Web Audio API Synthesizer]
+```
 
 ---
 
-## 📂 5. Struktur Berkas Proyek
+## 🛡️ 5. Protokol Keamanan & Zero-Leak Policy (Public Safe)
+
+Project ini mematuhi standar *Zero Credential Leak*:
+1. 🔒 **Bebas dari Kunci API Hardcoded**:
+   - Seluruh kredensial API telah dilepas dari kode sumber.
+   - Pengguna dapat memasukkan **Google Gemini API Key** langsung melalui **Modal Pengaturan (⚙️)** di antarmuka web, yang tersimpan terisolasi di `LocalStorage` browser pribadi.
+2. 🛡️ **Proteksi GitIgnore Mutlak**:
+   - Berkas `config.local.js` dan file `.env` otomatis dikecualikan dari Git melalui `.gitignore`. Repositori ini **100% aman untuk dipublikasikan sebagai Public Repo di GitHub**.
+3. 🧱 **Kebal SQL Injection & XSS**:
+   - Menggunakan format objek terstruktur dengan sanitasi teks HTML semantik sebelum dirender ke DOM.
+
+---
+
+## 📂 6. Struktur Berkas Proyek
 
 ```
 c:\My Project\Memony/
 │
-├── .gitignore              # Proteksi file rahasia agar tidak ter-push ke GitHub
+├── .gitignore              # Proteksi berkas privat agar tidak ter-push ke GitHub
 ├── firebase.json           # Konfigurasi hosting & cloud rules Firebase
 ├── firestore.rules         # Aturan keamanan database Cloud Firestore
 ├── package.json            # Script lokal & metadata project
 ├── README.md               # Dokumentasi mahakarya project
 │
 └── src/
-    ├── index.html          # Layout semantik utama (Nunito, Lucide, Anime.js)
-    ├── styles.css          # Desain Warm Studio Modern, 3D buttons, laser beam
-    ├── app.js              # Controller utama aplikasi & event orchestrator
-    ├── gemini-service.js   # Integrasi Google Gemini 2.0 Flash REST API
+    ├── index.html          # Layout semantik utama (Tabs navigation, Nunito font)
+    ├── styles.css          # Desain Warm Studio Modern, tactile shadow, kinetic UI
+    ├── app.js              # Controller utama aplikasi & tab orchestrator
+    ├── gemini-service.js   # Integrasi Google Gemini Flash Lite REST API
     ├── firebase-service.js # Integrasi Firestore real-time & Cloud Sync
-    ├── storage-service.js  # Penyimpanan lokal (offline cache) & ekspor CSV/JSON
+    ├── storage-service.js  # Penyimpanan lokal offline-first & ekspor CSV/JSON
+    ├── coin-3d-service.js  # Visualisasi koin emas 3D kinetik Three.js
     ├── audio-service.js    # Synthesizer efek audio taktil murni (Web Audio API)
     ├── chart-service.js    # Visualisasi donat SVG & legenda kategori
     ├── manifest.json       # PWA manifest untuk Android/iOS install
     ├── sw.js               # Service Worker untuk offline caching
-    ├── config.example.js   # Template konfigurasi publik untuk GitHub
+    ├── config.example.js   # Template konfigurasi publik aman untuk GitHub
     └── assets/
-        └── icon.svg        # Ikon resmi segel stempel emas & zamrud Memony
+        └── icon.svg        # Ikon resmi segel stempel emas Memony
 ```
 
 ---
 
-## ⚡ 6. Panduan Menjalankan
+## ⚡ 7. Panduan Menjalankan
 
 ### A. Menjalankan Secara Lokal di Komputer:
 ```bash
 cd "c:\My Project\Memony"
 
-# Menggunakan npx serve bawaan Node.js
+# Menjalankan server lokal ringan
 npm start
 # Buka http://localhost:3000 di browsermu
 ```
 
-### B. Konfigurasi Kredensial Pribadi:
-1. Salin `src/config.example.js` menjadi `src/config.local.js`.
-2. Masukkan **Gemini API Key** dan **Firebase Config** milikmu.
-3. Aplikasi akan langsung tersambung secara otomatis!
+### B. Konfigurasi Kunci API AI:
+1. Buka aplikasi di browser (`http://localhost:3000`).
+2. Klik ikon **Pengaturan (⚙️)** di pojok kanan atas.
+3. Tempel **Google Gemini API Key** milikmu (tersimpan aman di `LocalStorage` pribadi).
+4. Selesai! Fitur OCR Struk dan Curhat Suara langsung aktif.
 
-### C. Deploy ke Firebase Hosting (Online):
+### C. Deploy ke Firebase Hosting (Live Demo):
 ```bash
 npm run deploy
 # Aplikasi akan langsung LIVE di https://<project-id>.web.app
