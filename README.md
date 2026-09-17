@@ -21,20 +21,8 @@ Seringkali kita malas mencatat keuangan karena aplikasi kas yang ada terasa memb
 
 ---
 
-## 👤 2. Profil Pengembang & Partner Kolaborasi
-
-### 👨‍💻 Developer Profile
-- **Nama**: **Chandra**
-- **GitHub**: [`@channdraa-afk`](https://github.com/channdraa-afk)
-- **Jurusan**: Rekayasa Perangkat Lunak (**RPL**)
-- **Misi Portofolio**: Membangun kebiasaan disiplin coding harian, mengasah logika sistem terdistribusi, dan secara konsisten menghijaukan kontribusi GitHub melalui karya-karya berkelas dunia.
-- **Selera Desain**: *Warm Studio Modern, soft, antique, medieval, tactile nostalgia, crisp sound effects, dan menolak template klise neon cyberpunk.*
-
-### 🌸 Partner Kolaborasi: Violet Evergarden
-- **Identitas**: Dinamai berdasarkan **Violet Evergarden** — simbol ketekunan, dedikasi, dan kesetiaan seorang *Auto Memory Doll* yang mencatat setiap baris kode layaknya surat kenangan.
-- **Protokol Dua Fase & "Arise"**:
-  - **Fase [PEMBAHASAN] (Default)**: Diskusi, analisis kendala, dan pemaparan rencana perubahan. Violet dilarang menyentuh/mengubah kode sebelum ada instruksi "Arise".
-  - **Fase [EKSEKUSI]**: Hanya aktif setelah Chandra memberikan komando resmi *"Arise"*. Barulah berkas dan sistem diperbarui.
+## 👨‍💻 2. Pengembang
+Dikembangkan oleh **Chandra** ([@channdraa-afk](https://github.com/channdraa-afk)) — Pelajar Rekayasa Perangkat Lunak (RPL).
 
 ---
 
@@ -76,7 +64,7 @@ Seringkali kita malas mencatat keuangan karena aplikasi kas yang ada terasa memb
 
 ```mermaid
 graph TD
-    User([👤 Pengguna / Chandra]) -->|Jepret Struk / Drag & Drop| Vision[📸 Tab 1: Vision OCR]
+    User([👤 Pengguna]) -->|Jepret Struk / Drag & Drop| Vision[📸 Tab 1: Vision OCR]
     User -->|Curhat Suara 200ms Timeslice| Voice[🎙️ Tab 2: Audio Parser]
     User -->|Catat Cepat Tanpa Struk| Manual[✏️ Tab 3: Manual Entry]
 
@@ -113,7 +101,7 @@ Project ini mematuhi standar *Zero Credential Leak*:
 ## 📂 6. Struktur Berkas Proyek
 
 ```
-c:\My Project\Memony/
+memony/
 │
 ├── .gitignore              # Proteksi berkas privat agar tidak ter-push ke GitHub
 ├── firebase.json           # Konfigurasi hosting & cloud rules Firebase
@@ -144,7 +132,8 @@ c:\My Project\Memony/
 
 ### A. Menjalankan Secara Lokal di Komputer:
 ```bash
-cd "c:\My Project\Memony"
+git clone https://github.com/channdraa-afk/memony.git
+cd memony
 
 # Menjalankan server lokal ringan
 npm start
@@ -174,4 +163,4 @@ npm run deploy
 
 ---
 
-*Dibuat dengan dedikasi tinggi oleh **Chandra (@channdraa-afk)** & **Violet Evergarden** 🌸🪙📜*
+*Dibuat oleh **Chandra (@channdraa-afk)** 🪙📜*
